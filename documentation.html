@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLM Tree Documentation (Hinglish)</title>
+    <style>
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background: #f7f9fc;
+            color: #1f2933;
+            margin: 0;
+            padding: 40px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid rgba(99, 102, 241, 0.1);
+        }
+        header {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 48px 56px;
+        }
+        header h1 {
+            margin: 0 0 12px;
+            font-size: 2.4rem;
+            font-weight: 700;
+        }
+        header p {
+            margin: 0;
+            font-size: 1.05rem;
+            opacity: 0.92;
+        }
+        section {
+            padding: 32px 56px;
+            border-top: 1px solid rgba(99, 102, 241, 0.08);
+        }
+        h2 {
+            font-size: 1.45rem;
+            margin-bottom: 14px;
+            color: #4338ca;
+        }
+        p {
+            margin: 12px 0;
+            line-height: 1.7;
+        }
+        ul {
+            margin: 16px 0 0 22px;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .tagline {
+            display: inline-flex;
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.22);
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.02rem;
+            margin-bottom: 12px;
+        }
+        code {
+            background: rgba(99, 102, 241, 0.08);
+            color: #4338ca;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-family: "Fira Code", monospace;
+            font-size: 0.95rem;
+        }
+        .footer-note {
+            margin-top: 28px;
+            font-size: 0.92rem;
+            color: #64748b;
+            background: rgba(99, 102, 241, 0.07);
+            border-left: 3px solid #6366f1;
+            padding: 12px 16px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <span class="tagline">Project Documentation · Hinglish</span>
+            <h1>MLM Tree Feature ka Flow</h1>
+            <p>
+                Ye document explain karta hai ki humne referral-based MLM tree kaise banaya,
+                kis technology stack ka use kiya, aur backend + frontend logic kis tarah connect ho raha hai.
+            </p>
+        </header>
+
+        <section>
+            <h2>1. Tree ka Data Flow (Logic)</h2>
+            <p>
+                Primary logic <code>TreeController::index()</code> me hai. Yaha:
+            </p>
+            <ul>
+                <li>Sabse pehle hum <code>mlm_tree</code> table me jitne bhi root nodes (jinka <code>parent_id</code> null hai) unhe fetch karte hain.</li>
+                <li>Har root node pe <code>buildNode()</code> recursive helper call hota hai jo user details aur uske saare descendants assemble karta hai.</li>
+                <li>Har node structure me yeh data hota hai:
+                    <ul>
+                        <li>Related <code>User</code> model</li>
+                        <li>Current level (root ke liye 0)</li>
+                        <li>Children ka array (recursively)</li>
+                        <li>Direct child count aur total descendant count (downline)</li>
+                    </ul>
+                </li>
+                <li>Finally ye nested array Blade view ko pass kiya jata hai jaha rendering hoti hai.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>2. User Placement ka Workflow</h2>
+            <p>
+                Jab koi naya user register karta hai, <code>TreeController::place()</code> call hota hai:
+            </p>
+            <ul>
+                <li>Agar referrer diya gaya hai to pehle us referrer ka <code>MlmTree</code> record ensure kiya jata hai.</li>
+                <li>New user ke liye <code>MlmTree</code> entry banai jati hai jisme <code>parent_id</code> referrer ke node id par set hota hai.</li>
+                <li>Agar referrer null hai to user ko root level par rakha jata hai.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>3. Frontend Rendering aur Interactions</h2>
+            <p>
+                Blade view <code>tree.index</code> me genealogy-style layout use hua hai:
+            </p>
+            <ul>
+                <li>Recursive partial <code>tree.partials.node</code> har member card render karta hai.</li>
+                <li>Har card me naam, email, direct | total descendant count show hota hai.</li>
+                <li>Currently logged-in user ke card ko highlight karke “You” label diya gaya hai.</li>
+                <li>Vanilla JavaScript se branch collapse/expand aur referral link copy functionality provide ki gayi hai.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>4. Technologies / Stack ka breakdown</h2>
+            <ul>
+                <li><strong>Laravel (PHP)</strong>: Controllers, models aur Blade view rendering ke liye.</li>
+                <li><strong>Eloquent ORM</strong>: <code>User</code> aur <code>MlmTree</code> relationships manage karne ke liye.</li>
+                <li><strong>Blade templates</strong>: Recursive partials se tree structure generate kiya.</li>
+                <li><strong>Bootstrap + Custom CSS</strong>: Genealogy UI styling and responsive layout.</li>
+                <li><strong>Vanilla JavaScript</strong>: Branch toggling aur clipboard copy interactions.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>5. Quick Overview of Functions</h2>
+            <ul>
+                <li><code>TreeController::index()</code> – Root nodes fetch + complete tree structure build + view ko pass.</li>
+                <li><code>TreeController::place()</code> – Referrer ke niche naya MLM node create karta hai.</li>
+                <li>
+                    <code>TreeController::buildNode()</code> – Recursive helper jo har node ko detail me assemble karta hai.
+                    <ul>
+                        <li>Current <code>MlmTree</code> entry se related <code>User</code> fetch karta hai.</li>
+                        <li>Same entry ke <code>parent_id</code> ka use karke saare child nodes nikaalta hai aur har child pe khud ko recursive call karta hai.</li>
+                        <li>Return structure me <code>user</code>, <code>level</code>, <code>children</code>, <code>direct_count</code>, aur <code>descendants</code> (total downline) include karta hai.</li>
+                        <li>Descendant count calculate karne ke liye har child ke direct aur nested members ko sum karta hai: <code>carry + 1 + $child['descendants']</code>.</li>
+                        <li>Isi helper ki wajah se Blade view ko clean nested array milta hai jisse genealogy-style tree render karna easy ho jata hai.</li>
+                    </ul>
+                </li>
+                <li><code>AuthController::register()</code> – User create, referral verify, tree placement, login.</li>
+                <li><code>AuthController::validateReferral()</code> – AJAX referral code validation endpoint.</li>
+                <li>Blade partial <code>tree.partials.node</code> – Recursive card rendering with highlight logic.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>6. Recap (Map in Hinglish)</h2>
+            <p>
+                <strong>Data flow:</strong> <code>register → place() → mlm_tree record → index() → buildNode() → Blade render</code>
+            </p>
+            <p>
+                <strong>Result:</strong> Ek dynamic, referral-based MLM tree jisme har user ka level, downline aur referral link highlight hota hai, aur branch toggling se network ko easily explore kiya ja sakta hai.
+            </p>
+
+            <div class="footer-note">
+                Note: Agar aur koi customization chahiye ho (jaise commissions, depth control, ya analytics), hum is existing structure pe further modules build kar sakte hain.
+            </div>
+        </section>
+    </div>
+</body>
+</html>
+
